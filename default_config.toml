@@ -1,0 +1,6 @@
+Delay = 1000
+Addr = "127.0.0.1:9000"
+Database = "default"
+Username = "default"
+Password = ""
+Table = "default"

@@ -8,7 +8,10 @@ import (
 	linuxproc "github.com/c9s/goprocinfo/linux"
 	"github.com/pbnjay/memory"
 	"github.com/ClickHouse/clickhouse-go/v2"
+	"github.com/DomesticMoth/confer"
 )
+
+const DEFAULT_GLOBAL_PATH string = "/etc/syswatcher/config.toml"
 
 type Conf struct{
 	Delay uint64
@@ -46,12 +49,10 @@ func getCpu() linuxproc.CPUStat {
 
 func main(){
 	var conf Conf
-	conf.Delay = 1000
-	conf.Addr = "127.0.0.1:9000"
-	conf.Database = "Hostonfo"
-	conf.Username = "default"
-	conf.Password = ""
-	conf.Table = "System"
+	conf.Delay = 1000 // Default 1 ceond
+
+	err := confer.LoadConfig([]string{DEFAULT_GLOBAL_PATH}, &conf)	
+	if err != nil { log.Fatal(err) }
 
 	ctx := context.Background()
 	conn, err := clickhouse.Open(&clickhouse.Options{
@@ -74,8 +75,10 @@ func main(){
 		load := uint64(calcSingleCoreUsage(stat, last)*100)
 		last = stat
 		if load < 100 {
-			log.Info(load, getRam())
-			err := conn.AsyncInsert(ctx, fmt.Format("INSERT INTO %s VALUES (0,0,0,0)", conf.Table), false)
+			timestamp := time.Now().Unix()
+			query := fmt.Sprintf("INSERT INTO %s VALUES (%d,%d,%d,0)", conf.Table, timestamp, load, getRam())
+			//log.Info(query)
+			err := conn.AsyncInsert(ctx, query, false)
 			if err != nil { log.Fatal(err) }
 		}
 		time.Sleep(time.Duration(conf.Delay) * time.Millisecond)
