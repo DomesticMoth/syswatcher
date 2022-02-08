@@ -8,6 +8,7 @@ import (
 	linuxproc "github.com/c9s/goprocinfo/linux"
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/DomesticMoth/confer"
+	"github.com/capnm/sysinfo"
 )
 
 const DEFAULT_GLOBAL_PATH string = "/etc/syswatcher/config.toml"
@@ -38,6 +39,13 @@ func getRam() uint64{
 	mem := ReadMemoryStats()
 	total := mem.MemTotal
 	free := mem.MemAvailable
+	return (total-free)/(total/100)
+}
+
+func getSwap() uint64{
+	inf := sysinfo.Get()
+	total := inf.TotalSwap
+	free := inf.FreeSwap
 	return (total-free)/(total/100)
 }
 
@@ -76,7 +84,7 @@ func main(){
 		last = stat
 		if load < 100 {
 			timestamp := time.Now().Unix()
-			query := fmt.Sprintf("INSERT INTO %s VALUES (%d,%d,%d,0)", conf.Table, timestamp, load, getRam())
+			query := fmt.Sprintf("INSERT INTO %s VALUES (%d,%d,%d,%d)", conf.Table, timestamp, load, getRam(), getSwap())
 			//log.Info(query)
 			err := conn.AsyncInsert(ctx, query, false)
 			if err != nil { log.Fatal(err) }
