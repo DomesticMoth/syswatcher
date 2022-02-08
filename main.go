@@ -2,6 +2,7 @@ package main
 
 import (
 	"time"
+	"fmt"
 	"context"
 	log "github.com/sirupsen/logrus"
 	linuxproc "github.com/c9s/goprocinfo/linux"
@@ -15,6 +16,7 @@ type Conf struct{
 	Database string
 	Username string
 	Password string
+	Table string
 }
 
 func calcSingleCoreUsage(curr, prev linuxproc.CPUStat) float32 {
@@ -49,6 +51,7 @@ func main(){
 	conf.Database = "Hostonfo"
 	conf.Username = "default"
 	conf.Password = ""
+	conf.Table = "System"
 
 	ctx := context.Background()
 	conn, err := clickhouse.Open(&clickhouse.Options{
@@ -72,7 +75,7 @@ func main(){
 		last = stat
 		if load < 100 {
 			log.Info(load, getRam())
-			err := conn.AsyncInsert(ctx, "INSERT INTO System VALUES (0,0,0,0)", false)
+			err := conn.AsyncInsert(ctx, fmt.Format("INSERT INTO %s VALUES (0,0,0,0)", conf.Table), false)
 			if err != nil { log.Fatal(err) }
 		}
 		time.Sleep(time.Duration(conf.Delay) * time.Millisecond)
