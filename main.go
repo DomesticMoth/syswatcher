@@ -6,7 +6,6 @@ import (
 	"context"
 	log "github.com/sirupsen/logrus"
 	linuxproc "github.com/c9s/goprocinfo/linux"
-	"github.com/pbnjay/memory"
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/DomesticMoth/confer"
 )
@@ -36,8 +35,9 @@ func calcSingleCoreUsage(curr, prev linuxproc.CPUStat) float32 {
 }
 
 func getRam() uint64{
-	total := memory.TotalMemory()
-	free := memory.FreeMemory()
+	mem := ReadMemoryStats()
+	total := mem.MemTotal
+	free := mem.MemAvailable
 	return (total-free)/(total/100)
 }
 
